@@ -1,0 +1,16 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+venv/
+
+# VSCode
+.vscode/
+
+# Streamlit cache
+.streamlit/cache/
+
+# Data & Models
+data/
+models/
