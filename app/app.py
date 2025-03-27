@@ -13,8 +13,9 @@ st.markdown("<h4 style='text-align: center;'>An AI-powered Emotion and Sentiment
 
 # Model download and setup
 MODEL_ZIP_URL = "https://drive.google.com/uc?export=download&id=1M_3HzvbPzFOgGXHj8XM0zRbH01tYxLCX"
-MODEL_ZIP_PATH = "models.zip"
+MODEL_ZIP_PATH = "Archive.zip"
 MODEL_DIR = "models"
+
 
 def download_models():
     if not os.path.exists(MODEL_DIR):
@@ -26,7 +27,7 @@ def download_models():
         st.info("🗃️ Extracting models...")
         os.makedirs(MODEL_DIR, exist_ok=True)
         with zipfile.ZipFile(MODEL_ZIP_PATH, 'r') as zip_ref:
-            zip_ref.extractall(MODEL_DIR)
+            zip_ref.extractall()
 
         os.remove(MODEL_ZIP_PATH)
         st.success("✅ Models ready!")
