@@ -17,40 +17,30 @@ EMOTION_FILE_ID = "1TkUrX-E16zF5lXm19khJbB9rgQ8PmsZq"
 MODEL_DIR = "models"
 
 @st.cache_resource
-def download_and_load_models():
-    os.makedirs(MODEL_DIR, exist_ok=True)
-
-    sentiment_path = os.path.join(MODEL_DIR, "bert_sentiment.pt")
-    emotion_path = os.path.join(MODEL_DIR, "bert_emotion.pt")
-
-    if not os.path.exists(sentiment_path):
-        st.info("📥 Downloading Sentiment Model...")
-        gdown.download(f"https://drive.google.com/uc?id={SENTIMENT_FILE_ID}", sentiment_path, quiet=False)
-
-    if not os.path.exists(emotion_path):
-        st.info("📥 Downloading Emotion Model...")
-        gdown.download(f"https://drive.google.com/uc?id={EMOTION_FILE_ID}", emotion_path, quiet=False)
+def load_models():
+    download_and_load_models()
 
     tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
-    
-   
+
+    # Load Sentiment model (trained with 5 classes)
     sentiment_model = BertForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=5)
-    sentiment_model.load_state_dict(torch.load(sentiment_path, map_location=torch.device("cpu")))
+    sentiment_model.load_state_dict(torch.load("bert_sentiment.pt", map_location=torch.device("cpu")))
     sentiment_model.eval()
-    
+
+    # Load Emotion model (trained with 28 emotion classes)
     emotion_model = BertForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=28)
-    emotion_model.load_state_dict(torch.load(emotion_path, map_location=torch.device("cpu")))
+    emotion_model.load_state_dict(torch.load("bert_emotion.pt", map_location=torch.device("cpu")))
     emotion_model.eval()
 
-
     emotion_labels = [
-        "admiration", "amusement", "anger", "annoyance", "approval", "caring", "confusion",
-        "curiosity", "desire", "disappointment", "disapproval", "disgust", "embarrassment",
-        "excitement", "fear", "gratitude", "grief", "joy", "love", "nervousness", "optimism",
-        "pride", "realization", "relief", "remorse", "sadness", "surprise", "neutral"
+        'admiration', 'amusement', 'anger', 'annoyance', 'approval', 'caring', 'confusion', 'curiosity',
+        'desire', 'disappointment', 'disapproval', 'disgust', 'embarrassment', 'excitement', 'fear',
+        'gratitude', 'grief', 'joy', 'love', 'nervousness', 'optimism', 'pride', 'realization', 'relief',
+        'remorse', 'sadness', 'surprise', 'neutral'
     ]
 
     return tokenizer, sentiment_model, emotion_model, emotion_labels
+
 
 # Load models
 tokenizer, sentiment_model, emotion_model, emotion_labels = download_and_load_models()
