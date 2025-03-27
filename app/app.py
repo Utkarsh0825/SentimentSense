@@ -32,14 +32,16 @@ def download_and_load_models():
         gdown.download(f"https://drive.google.com/uc?id={EMOTION_FILE_ID}", emotion_path, quiet=False)
 
     tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
-
+    
+   
     sentiment_model = BertForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=5)
     sentiment_model.load_state_dict(torch.load(sentiment_path, map_location=torch.device("cpu")))
     sentiment_model.eval()
-
+    
     emotion_model = BertForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=28)
     emotion_model.load_state_dict(torch.load(emotion_path, map_location=torch.device("cpu")))
     emotion_model.eval()
+
 
     emotion_labels = [
         "admiration", "amusement", "anger", "annoyance", "approval", "caring", "confusion",
