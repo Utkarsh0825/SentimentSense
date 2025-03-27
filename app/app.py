@@ -1,3 +1,16 @@
+import gdown  # <-- Add this at the top
+
+@st.cache_resource
+def download_and_load_models():
+    if not os.path.exists("bert_sentiment.pt"):
+        st.info("📥 Downloading pre-trained models...")
+        gdown.download("https://drive.google.com/uc?id=1M_3HzvbPzFOgGXHj8XM0zRbH01tYxLCX", MODEL_ZIP_PATH, quiet=False)
+
+        st.info("🗃️ Extracting models...")
+        with zipfile.ZipFile(MODEL_ZIP_PATH, 'r') as zip_ref:
+            zip_ref.extractall()
+
+        os.remove(MODEL_ZIP_PATH)
 import streamlit as st
 import torch
 from transformers import BertTokenizer, BertForSequenceClassification
