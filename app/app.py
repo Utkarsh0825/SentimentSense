@@ -4,6 +4,7 @@ from transformers import BertTokenizer, BertForSequenceClassification
 import torch.nn.functional as F
 import zipfile
 import os
+import json
 import requests
 
 # UI setup
@@ -11,83 +12,72 @@ st.set_page_config(page_title="SentimentSense", layout="centered")
 st.markdown("<h1 style='text-align: center;'>💬 SentimentSense</h1>", unsafe_allow_html=True)
 st.markdown("<h4 style='text-align: center;'>An AI-powered Emotion and Sentiment Analyzer</h4>", unsafe_allow_html=True)
 
-# Model download and setup
+# 📦 Google Drive zip download config
 MODEL_ZIP_URL = "https://drive.google.com/uc?export=download&id=1M_3HzvbPzFOgGXHj8XM0zRbH01tYxLCX"
 MODEL_ZIP_PATH = "Archive.zip"
-MODEL_DIR = "models"
 
-
-def download_models():
-    if not os.path.exists(MODEL_DIR):
-        st.info("📦 Downloading pre-trained models...")
+@st.cache_resource
+def download_and_load_models():
+    if not os.path.exists("bert_sentiment.pt"):
+        st.info("📥 Downloading pre-trained models...")
         with open(MODEL_ZIP_PATH, "wb") as f:
             response = requests.get(MODEL_ZIP_URL)
             f.write(response.content)
 
         st.info("🗃️ Extracting models...")
-        os.makedirs(MODEL_DIR, exist_ok=True)
         with zipfile.ZipFile(MODEL_ZIP_PATH, 'r') as zip_ref:
             zip_ref.extractall()
 
         os.remove(MODEL_ZIP_PATH)
-        st.success("✅ Models ready!")
 
-@st.cache_resource
-def load_models():
-    download_models()
     tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
-
-    sentiment_model = BertForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=5)
-    sentiment_model.load_state_dict(torch.load(f"{MODEL_DIR}/bert_sentiment.pt", map_location=torch.device("cpu")))
+    sentiment_model = BertForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=3)
+    sentiment_model.load_state_dict(torch.load("bert_sentiment.pt", map_location=torch.device("cpu")))
     sentiment_model.eval()
 
     emotion_model = BertForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=28)
-    emotion_model.load_state_dict(torch.load(f"{MODEL_DIR}/bert_emotion.pt", map_location=torch.device("cpu")))
+    emotion_model.load_state_dict(torch.load("bert_emotion.pt", map_location=torch.device("cpu")))
     emotion_model.eval()
 
-    emotion_labels = [
-        'admiration', 'amusement', 'anger', 'annoyance', 'approval', 'caring', 'confusion',
-        'curiosity', 'desire', 'disappointment', 'disapproval', 'disgust', 'embarrassment',
-        'excitement', 'fear', 'gratitude', 'grief', 'joy', 'love', 'nervousness', 'optimism',
-        'pride', 'realization', 'relief', 'remorse', 'sadness', 'surprise', 'neutral'
-    ]
+    with open("emotion_labels.json", "r") as f:
+        emotion_labels = json.load(f)
 
     return tokenizer, sentiment_model, emotion_model, emotion_labels
 
-# Load models
-tokenizer, sentiment_model, emotion_model, emotion_labels = load_models()
+# Load models safely
+tokenizer, sentiment_model, emotion_model, emotion_labels = download_and_load_models()
 
-# Text Input
+# Input
 text_input = st.text_area("Enter a sentence to analyze:", height=150)
 
-# Button
-if st.button("Analyze"):
-    if text_input.strip():
-        st.success("✅ Analysis Complete")
+if st.button("Analyze") and text_input.strip():
+    inputs = tokenizer(text_input, return_tensors="pt", truncation=True, padding=True)
 
-        inputs = tokenizer(text_input, return_tensors="pt", truncation=True, padding=True)
+    # Sentiment
+    with torch.no_grad():
+        sent_outputs = sentiment_model(**inputs)
+        sent_logits = sent_outputs.logits
+        sent_probs = F.softmax(sent_logits, dim=1)
+        sent_label = torch.argmax(sent_probs, dim=1).item()
+        sent_conf = float(torch.max(sent_probs).item())
 
-        # Sentiment
-        with torch.no_grad():
-            sentiment_outputs = sentiment_model(**inputs)
-            sentiment_probs = F.softmax(sentiment_outputs.logits, dim=1)[0]
-            sentiment_score = sentiment_probs.argmax().item()
-            sentiment_conf = float(sentiment_probs[sentiment_score])
+    sentiment_classes = ["Negative", "Neutral", "Very Positive"]
+    sentiment_emojis = ["😠", "😐", "😍"]
+    sentiment = sentiment_classes[sent_label]
+    emoji = sentiment_emojis[sent_label]
 
-        sentiment_labels = ["Very Negative", "Negative", "Neutral", "Positive", "Very Positive"]
-        sentiment_emojis = ["😠", "🙁", "😐", "🙂", "😍"]
+    st.success("✅ Analysis Complete")
+    st.markdown(f"**Sentiment:** {sentiment} {emoji}")
+    st.progress(min(float(sent_conf), 1.0))
 
-        st.markdown(f"### Sentiment: {sentiment_labels[sentiment_score]} {sentiment_emojis[sentiment_score]}")
-        st.progress(min(float(sentiment_conf), 1.0))
+    # Emotion
+    with torch.no_grad():
+        emo_outputs = emotion_model(**inputs)
+        emo_logits = emo_outputs.logits
+        emo_probs = F.softmax(emo_logits, dim=1)
+        top_emo_idx = torch.argmax(emo_probs, dim=1).item()
+        emo_label = emotion_labels[str(top_emo_idx)]
+        emo_conf = float(torch.max(emo_probs).item())
 
-        # Emotion
-        with torch.no_grad():
-            emotion_outputs = emotion_model(**inputs)
-            emotion_probs = F.softmax(emotion_outputs.logits, dim=1)[0]
-            top_emotion = emotion_probs.argmax().item()
-            emotion_conf = float(emotion_probs[top_emotion])
-
-        st.markdown(f"### Emotion: {emotion_labels[top_emotion].capitalize()} 🎭")
-        st.progress(min(float(emotion_conf), 1.0))
-    else:
-        st.warning("⚠️ Please enter some text.")
+    st.markdown(f"**Top Emotion:** `{emo_label}`")
+    st.progress(min(float(emo_conf), 1.0))
