@@ -1,3 +1,4 @@
+import streamlit as st
 import gdown  # <-- Add this at the top
 
 @st.cache_resource
@@ -11,7 +12,7 @@ def download_and_load_models():
             zip_ref.extractall()
 
         os.remove(MODEL_ZIP_PATH)
-import streamlit as st
+
 import torch
 from transformers import BertTokenizer, BertForSequenceClassification
 import torch.nn.functional as F
