@@ -56,10 +56,12 @@
 ```bash
 git clone https://github.com/Utkarsh0825/SentimentSense.git
 cd SentimentSense
-### 2. Install Dependencies
+
+
+2. Install Dependencies
 pip install -r requirements.txt
 
-### 3. Run the app 
+3. Run the app 
 streamlit run app.py
 
 🤝 Contributing
