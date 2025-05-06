@@ -26,13 +26,18 @@ st.markdown("<h4 style='text-align: center;'>An AI-powered Emotion and Sentiment
 # -----------------------------
 @st.cache_resource
 def download_and_load_models():
-    if not os.path.exists(SENTIMENT_MODEL_PATH):
-        st.info("📥 Downloading Sentiment Model...")
-        gdown.download(id=SENTIMENT_ID, output=SENTIMENT_MODEL_PATH, quiet=False)
+    try:
+        if not os.path.exists(SENTIMENT_MODEL_PATH):
+            st.info("📥 Downloading Sentiment Model...")
+            gdown.download(id=SENTIMENT_ID, output=SENTIMENT_MODEL_PATH, quiet=False, use_cookies=True)
 
-    if not os.path.exists(EMOTION_MODEL_PATH):
-        st.info("📥 Downloading Emotion Model...")
-        gdown.download(id=EMOTION_ID, output=EMOTION_MODEL_PATH, quiet=False)
+        if not os.path.exists(EMOTION_MODEL_PATH):
+            st.info("📥 Downloading Emotion Model...")
+            gdown.download(id=EMOTION_ID, output=EMOTION_MODEL_PATH, quiet=False, use_cookies=True)
+    except Exception as e:
+        st.error("❌ Failed to download model files from Google Drive. "
+                 "Please ensure they are shared publicly and accessible without login.")
+        st.stop()
 
     tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 
