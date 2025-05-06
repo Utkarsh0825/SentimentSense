@@ -28,15 +28,14 @@ st.markdown("<h4 style='text-align: center;'>An AI-powered Emotion and Sentiment
 def download_and_load_models():
     if not os.path.exists(SENTIMENT_MODEL_PATH):
         st.info("📥 Downloading Sentiment Model...")
-        gdown.download(f"https://drive.google.com/uc?id={SENTIMENT_ID}", SENTIMENT_MODEL_PATH, quiet=False)
+        gdown.download(id=SENTIMENT_ID, output=SENTIMENT_MODEL_PATH, quiet=False)
 
     if not os.path.exists(EMOTION_MODEL_PATH):
         st.info("📥 Downloading Emotion Model...")
-        gdown.download(f"https://drive.google.com/uc?id={EMOTION_ID}", EMOTION_MODEL_PATH, quiet=False)
+        gdown.download(id=EMOTION_ID, output=EMOTION_MODEL_PATH, quiet=False)
 
     tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 
-    # FIX: Load sentiment model with 3 labels
     sentiment_model = BertForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=3)
     sentiment_model.load_state_dict(torch.load(SENTIMENT_MODEL_PATH, map_location=torch.device("cpu")))
     sentiment_model.eval()
